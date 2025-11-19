@@ -7,12 +7,12 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 
-# ============ 1️⃣ LOAD DATA ====================
+# ============ LOAD DATA ====================
 Orders = pd.read_excel("C:/Users/emihl/OneDrive/Documentos/327/05_Project_DT_C.xlsx", sheet_name="Orders")
 DistanceMatrix = pd.read_excel("C:/Users/emihl/OneDrive/Documentos/327/05_Project_DT_C.xlsx", sheet_name="DistanceMatrix")
 DeliveryLogs = pd.read_excel("C:/Users/emihl/OneDrive/Documentos/327/05_Project_DT_C.xlsx", sheet_name="DeliveryLogs")
 
-# ============ 2️⃣ PREPARE DISTANCE MATRIX =======
+# ============ PREPARE DISTANCE MATRIX =======
 distances = []
 for i in range(len(DistanceMatrix)):
     from_city = DistanceMatrix.iloc[i, 0]
@@ -22,28 +22,28 @@ for i in range(len(DistanceMatrix)):
             distances.append({'From': from_city, 'To': to_city, 'Distance': distance})
 distances_df = pd.DataFrame(distances)
 
-# ============ 3️⃣ PROCESS DELIVERY LOGS =========
+# ============ PROCESS DELIVERY LOGS =========
 DeliveryLogs['Time'] = pd.to_datetime(DeliveryLogs['Time'])
 lead_time_data = DeliveryLogs.pivot_table(
     index='ID', columns='Status', values='Time', aggfunc='first'
 ).reset_index()
 lead_time_data['LeadTime'] = (lead_time_data['Delivered'] - lead_time_data['Ordered']).dt.days
 
-# ============ 4️⃣ MERGE DATA ====================
+# ============ MERGE DATA ====================
 OrdersWithLeadTime = Orders.merge(lead_time_data[['ID','LeadTime']], on='ID', how='left')
 merged_df = OrdersWithLeadTime.merge(distances_df, on=['From','To'], how='left')
 
-# ============ 5️⃣ SPLIT DATA 70/30 ============
+# ============  SPLIT DATA 70/30 ============
 size70 = round(len(merged_df) * 0.7)
 df70 = merged_df.iloc[:size70].copy()
 df30 = merged_df[size70:].copy()
 
-# ============ 6️⃣ CLEAN DATA ===================
+# ============  CLEAN DATA ===================
 df70['LeadTime'] = df70['LeadTime'].fillna(0)
 df70['OrderVolume'] = df70['OrderVolume'].fillna(0)
 df70['Distance'] = df70['Distance'].fillna(0)
 
-# ================= 7️⃣ LINEAR REGRESSION ========
+# ================= LINEAR REGRESSION ========
 target = "LeadTime"
 numeric_cols = df70.select_dtypes(include=['float64','int64']).columns.drop(target)
 formula = f"{target} ~ {' + '.join(numeric_cols)} + C(DestinationType)"
@@ -53,7 +53,7 @@ print(Lm.summary())
 # Predict on 30% test data
 Lm_Predict = Lm.predict(df30)
 
-# ================= 8️⃣ RANDOM FOREST ===========
+# =================  RANDOM FOREST ===========
 df_train = df70.copy()
 df_test = df30.copy()
 
@@ -96,7 +96,7 @@ print(f"R² Score: {r2_rf:.4f}")
 print(f"MSE: {mse_rf:.4f}")
 print(f"Average % Error: {AverageError_rf}%")
 
-# ============ 9️⃣ MODEL COMPARISON ============
+# ============  MODEL COMPARISON ============
 try:
     mse_lr = mean_squared_error(y_test, Lm_Predict)
     r2_lr = r2_score(y_test, Lm_Predict)
@@ -109,7 +109,7 @@ try:
 except:
     print("\nLinear Regression model (Lm) not available for comparison.")
 
-# ============ 10️⃣ ACTUAL VS PREDICTED PLOTS =======
+# ============  ACTUAL VS PREDICTED PLOTS =======
 # Linear Regression
 plt.figure(figsize=(8,6))
 plt.scatter(y_test, Lm_Predict, color='orange', alpha=0.6, label='Linear Regression')
@@ -141,7 +141,7 @@ plt.title("Model Comparison: Actual vs Predicted LeadTime")
 plt.legend()
 plt.show()
 
-# ============ 11️⃣ RESIDUALS (Random Forest) ==========
+# ============  RESIDUALS (Random Forest) ==========
 residuals = y_test - y_pred_rf
 sns.histplot(residuals, bins=20, kde=True, color='green')
 plt.xlabel("Residuals")
@@ -149,7 +149,7 @@ plt.ylabel("Frequency")
 plt.title("Error Distribution (Random Forest)")
 plt.show()
 
-# ============ 12️⃣ FEATURE IMPORTANCE (Random Forest) ==========
+# ============  FEATURE IMPORTANCE (Random Forest) ==========
 importances = rf.feature_importances_
 features = X_train.columns
 plt.barh(features, importances)
